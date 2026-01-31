@@ -3,7 +3,6 @@ package build
 import (
 	"chopper/internal/config"
 	"chopper/internal/server"
-	"time"
 )
 
 func Run() error {
@@ -11,23 +10,8 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	readTimeout, err := time.ParseDuration(serverConfig.ReadTimeout)
-	if err != nil {
-		return err
-	}
-	writeTimeout, err := time.ParseDuration(serverConfig.WriteTimeout)
-	if err != nil {
-		return err
-	}
-	idleTimeout, err := time.ParseDuration(serverConfig.IdleTimeout)
-	if err != nil {
-		return err
-	}
-	timeToShutdown, err := time.ParseDuration(serverConfig.TimeToShutdown)
-	if err != nil {
-		return err
-	}
-	server := server.NewServer(":8080", readTimeout, writeTimeout, idleTimeout, timeToShutdown)
+
+	server := server.NewServer(":8080", serverConfig.ReadTimeout, serverConfig.WriteTimeout, serverConfig.IdleTimeout, serverConfig.TimeToShutdown)
 	if err := server.StartServer(); err != nil {
 		return err
 	}

@@ -1,6 +1,8 @@
 package server
 
 import (
+	h "chopper/internal/delivery/http"
+	"chopper/internal/usecase"
 	"context"
 	"fmt"
 	"net/http"
@@ -8,6 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
@@ -15,12 +19,21 @@ type Server struct {
 	timeoutToShutdown time.Duration
 }
 
-func NewServer(address string, readTimeout, writeTimeout, idleTimeout, timeoutToShutdown time.Duration) *Server {
+func NewServer(address string, readTimeout, writeTimeout, idleTimeout, timeoutToShutdown time.Duration, userService *usecase.UserService) *Server {
+	// создание gin core
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(gin.Recovery())
+	usersGroup := r.Group("/users")
+
+	userHandler := h.NewUserHandler(userService)
+	userHandler.RegisterRoutes(usersGroup)
 	server := &http.Server{
 		Addr:         address,
 		ReadTimeout:  readTimeout,
 		WriteTimeout: writeTimeout,
 		IdleTimeout:  idleTimeout,
+		Handler:      r,
 	}
 	return &Server{
 		server:            server,

@@ -2,6 +2,8 @@ package server
 
 import (
 	h "chopper/internal/delivery/http"
+	"chopper/internal/domain"
+	"chopper/internal/middleware"
 	"chopper/internal/usecase"
 	"context"
 	"fmt"
@@ -19,15 +21,39 @@ type Server struct {
 	timeoutToShutdown time.Duration
 }
 
-func NewServer(address string, readTimeout, writeTimeout, idleTimeout, timeoutToShutdown time.Duration, userService *usecase.UserService) *Server {
+func NewServer(address string, readTimeout, writeTimeout, idleTimeout, timeoutToShutdown time.Duration, serverMode domain.ServerMode, userService *usecase.UserService, dailyNotesService *usecase.DailyNotesService, alertService *usecase.AlertService, authMiddleware *middleware.AuthMiddleware, rateLimiter *middleware.RateLimiter) *Server {
 	// создание gin core
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(string(serverMode))
 	r := gin.New()
 	r.Use(gin.Recovery())
-	usersGroup := r.Group("/users")
+	r.Use(gin.Logger())
+
+	// users public
+	usersPublic := r.Group("/users")
+	usersPublic.Use(rateLimiter.RateLimit())
+
+	// users protected
+	usersProtected := r.Group("/users")
+	usersProtected.Use(authMiddleware.Auth())
+	usersProtected.Use(rateLimiter.RateLimit())
+
+	// notes protected
+	notesProtected := r.Group("/notes")
+	notesProtected.Use(authMiddleware.Auth())
+	notesProtected.Use(rateLimiter.RateLimit())
+
+	// alert protected
+	alertProtected := r.Group("/alert")
+	alertProtected.Use(authMiddleware.Auth())
+	alertProtected.Use(rateLimiter.RateLimit())
 
 	userHandler := h.NewUserHandler(userService)
-	userHandler.RegisterRoutes(usersGroup)
+	userHandler.RegisterRoutes(usersPublic, usersProtected)
+	noteHandler := h.NewNoteHandler(dailyNotesService)
+	noteHandler.RegisterRoutes(notesProtected)
+	alertHandler := h.NewAlertHandler(alertService)
+	alertHandler.RegisterRoutes(alertProtected)
+
 	server := &http.Server{
 		Addr:         address,
 		ReadTimeout:  readTimeout,

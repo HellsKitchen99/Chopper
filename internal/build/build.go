@@ -2,7 +2,9 @@ package build
 
 import (
 	"chopper/internal/config"
-	"chopper/internal/repositoty"
+	"chopper/internal/middleware"
+	"chopper/internal/repository"
+	"chopper/internal/security"
 	"chopper/internal/server"
 	"chopper/internal/usecase"
 	"context"
@@ -13,6 +15,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"golang.org/x/time/rate"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -22,7 +25,7 @@ var migrationsFilePath string = "file:///app/migrations"
 func Run() error {
 	fmt.Println("step1")
 	// загрузка всех конфигов
-	serverConfig, databaseConfig, err := config.ConfigsLoad()
+	serverConfig, jwtConfig, databaseConfig, rateLimiterConfig, err := config.ConfigsLoad()
 	if err != nil {
 		return err
 	}
@@ -55,12 +58,19 @@ func Run() error {
 
 	fmt.Println("step4")
 	// создание слоев
-	userRepo := repositoty.NewUserRepositoryRealization(pool)
-	userService := usecase.NewUserService(userRepo)
+	userRepo := repository.NewUserRepositoryRealization(pool)
+	jwtService := security.NewJwt(jwtConfig.Secret, jwtConfig.ExpirationTime, jwtConfig.Issuer, jwtConfig.Audience)
+	userService := usecase.NewUserService(userRepo, jwtService)
+	authMiddleware := middleware.NewAuthMiddleware(jwtService)
+	dailyNotesRepo := repository.NewDailyNotesRepositoryRealization(pool)
+	dailyNotesService := usecase.NewDailyNotesService(dailyNotesRepo)
+	alertRepository := repository.NewAlertRepositoryRealization(pool)
+	alertService := usecase.NewAlertServcie(alertRepository)
+	rateLimiter := middleware.NewRateLimiter(rate.Every(rateLimiterConfig.Rate), rateLimiterConfig.Burst)
 
 	fmt.Println("step5")
 	// запуск сервера
-	server := server.NewServer(":8080", serverConfig.ReadTimeout, serverConfig.WriteTimeout, serverConfig.IdleTimeout, serverConfig.TimeToShutdown, userService)
+	server := server.NewServer(serverConfig.Address, serverConfig.ReadTimeout, serverConfig.WriteTimeout, serverConfig.IdleTimeout, serverConfig.TimeToShutdown, serverConfig.ServerMode, userService, dailyNotesService, alertService, authMiddleware, rateLimiter)
 	if err := server.StartServer(); err != nil {
 		return err
 	}

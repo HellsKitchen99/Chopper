@@ -56,29 +56,29 @@ func (j *Jwt) GenerateToken(id uuid.UUID, username, email string, role domain.Ro
 	return signedToken, nil
 }
 
-func (j *Jwt) ValidateToken(signedToken string) error {
-	claims := UserClaims{}
-	token, err := jwtPackage.ParseWithClaims(signedToken, &claims, func(signedToken *jwtPackage.Token) (any, error) {
+func (j *Jwt) ValidateToken(signedToken string) (*UserClaims, error) {
+	claims := &UserClaims{}
+	token, err := jwtPackage.ParseWithClaims(signedToken, claims, func(signedToken *jwtPackage.Token) (any, error) {
 		if _, ok := signedToken.Method.(*jwtPackage.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("wrong signing method")
 		}
 		return j.secret, nil
 	})
 	if err != nil {
-		return err
+		return claims, err
 	}
 
 	if !token.Valid {
-		return fmt.Errorf("invalid token")
+		return claims, fmt.Errorf("invalid token")
 	}
 	if claims.Issuer != j.issuer {
-		return fmt.Errorf("wrong issuer")
+		return claims, fmt.Errorf("wrong issuer")
 	}
 	if claims.ExpiresAt.Before(time.Now()) {
-		return fmt.Errorf("token is expired")
+		return claims, fmt.Errorf("token is expired")
 	}
 	if token.Method.Alg() != jwtPackage.SigningMethodHS256.Alg() {
-		return fmt.Errorf("wrong signing method")
+		return claims, fmt.Errorf("wrong signing method")
 	}
 	hasAudience := func(data jwtPackage.ClaimStrings, needAudience string) bool {
 		for _, s := range data {
@@ -89,7 +89,7 @@ func (j *Jwt) ValidateToken(signedToken string) error {
 		return false
 	}
 	if hasAudience := hasAudience(claims.Audience, j.audience); !hasAudience {
-		return fmt.Errorf("wrong audience")
+		return claims, fmt.Errorf("wrong audience")
 	}
-	return nil
+	return claims, nil
 }

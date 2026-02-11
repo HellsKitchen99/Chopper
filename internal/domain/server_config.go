@@ -8,4 +8,5 @@ type ServerConfig struct {
 	WriteTimeout   time.Duration
 	IdleTimeout    time.Duration
 	TimeToShutdown time.Duration
+	ServerMode     ServerMode
 }

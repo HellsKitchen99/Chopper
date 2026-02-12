@@ -40,7 +40,9 @@ func (d *DailyNotesService) CreateNote(ctx context.Context, userId uuid.UUID, da
 
 func (d *DailyNotesService) ChangeMood(ctx context.Context, userId uuid.UUID, date time.Time, mood int16) (string, error) {
 	if err := d.dailyNotesRepository.ChangeMood(ctx, userId, date, mood); err != nil {
-		// проверка ошибок из репозитория
+		if errors.Is(err, repository.ErrDailyEntryNotFound) {
+			return "", ErrNoteNotExists
+		}
 		return "", err
 	}
 	return "mood успешно изменен", nil
@@ -48,7 +50,9 @@ func (d *DailyNotesService) ChangeMood(ctx context.Context, userId uuid.UUID, da
 
 func (d *DailyNotesService) ChangeSleepHours(ctx context.Context, userId uuid.UUID, date time.Time, sleepHours float64) (string, error) {
 	if err := d.dailyNotesRepository.ChangeSleepHours(ctx, userId, date, sleepHours); err != nil {
-		// проверка ошибок из репоизитория
+		if errors.Is(err, repository.ErrDailyEntryNotFound) {
+			return "", ErrNoteNotExists
+		}
 		return "", err
 	}
 	return "sleep hours успешно изменен", nil
@@ -56,7 +60,9 @@ func (d *DailyNotesService) ChangeSleepHours(ctx context.Context, userId uuid.UU
 
 func (d *DailyNotesService) ChangeLoad(ctx context.Context, userId uuid.UUID, date time.Time, load int16) (string, error) {
 	if err := d.dailyNotesRepository.ChangeLoad(ctx, userId, date, load); err != nil {
-		// проверка ошибок из репозитория
+		if errors.Is(err, repository.ErrDailyEntryNotFound) {
+			return "", ErrNoteNotExists
+		}
 		return "", err
 	}
 	return "load успешно изменен", nil

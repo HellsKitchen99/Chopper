@@ -35,30 +35,36 @@ func (d *DailyNotesRepositoryRealization) CreateNote(ctx context.Context, id, us
 
 func (d *DailyNotesRepositoryRealization) ChangeMood(ctx context.Context, userId uuid.UUID, date time.Time, mood int16) error {
 	sql := "UPDATE DailyEntries SET mood = $1 WHERE user_id = $2 AND date = $3"
-	_, err := d.pool.Exec(ctx, sql, mood, userId, date)
+	tag, err := d.pool.Exec(ctx, sql, mood, userId, date)
 	if err != nil {
-		// проверить ошибки
 		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrDailyEntryNotFound
 	}
 	return nil
 }
 
 func (d *DailyNotesRepositoryRealization) ChangeSleepHours(ctx context.Context, userId uuid.UUID, date time.Time, sleepHours float64) error {
 	sql := "UPDATE DailyEntries SET sleep_hours = $1 WHERE user_id = $2 AND date = $3"
-	_, err := d.pool.Exec(ctx, sql, sleepHours, userId, date)
+	tag, err := d.pool.Exec(ctx, sql, sleepHours, userId, date)
 	if err != nil {
-		// проверить ошибки
 		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrDailyEntryNotFound
 	}
 	return nil
 }
 
 func (d *DailyNotesRepositoryRealization) ChangeLoad(ctx context.Context, userId uuid.UUID, date time.Time, load int16) error {
 	sql := "UPDATE DailyEntries SET load = $1 WHERE user_id = $2 AND date = $3"
-	_, err := d.pool.Exec(ctx, sql, load, userId, date)
+	tag, err := d.pool.Exec(ctx, sql, load, userId, date)
 	if err != nil {
-		// проверить ошибки
 		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrDailyEntryNotFound
 	}
 	return nil
 }

@@ -47,12 +47,30 @@ func (n *NoteHandler) CreateNote(c *gin.Context) {
 		})
 		return
 	}
-	if err := n.dailyNotesService.CreateNote(ctx, userId, dailyNoteFromFront); err != nil && errors.Is(err, usecase.ErrNoteAlreadyExists) {
-		c.JSON(http.StatusConflict, gin.H{
-			"error": "note already exists",
-		})
-		return
-	} else if err != nil {
+	err := n.dailyNotesService.CreateNote(ctx, userId, dailyNoteFromFront)
+	if err != nil {
+		if errors.Is(err, usecase.ErrNoteAlreadyExists) {
+			c.JSON(http.StatusNotFound, gin.H{})
+			return
+		}
+		if errors.Is(err, usecase.ErrWrongMoodValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "wrong mood value",
+			})
+			return
+		}
+		if errors.Is(err, usecase.ErrWrongSleepHourValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "wrong sleep hours value",
+			})
+			return
+		}
+		if errors.Is(err, usecase.ErrWrongLoadValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "wrong load value",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "internal server error",
 		})
@@ -86,7 +104,18 @@ func (n *NoteHandler) ChangeMood(c *gin.Context) {
 	}
 	changeMessage, err := n.dailyNotesService.ChangeMood(ctx, userId, changeMoodFromFront.Date, changeMoodFromFront.Mood)
 	if err != nil {
-		// проверка ошибки из usecase
+		if errors.Is(err, usecase.ErrNoteNotExists) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "note not exists",
+			})
+			return
+		}
+		if errors.Is(err, usecase.ErrWrongMoodValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "wrong mood value",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "internal server error",
 		})
@@ -122,9 +151,20 @@ func (n *NoteHandler) ChangeSleepHours(c *gin.Context) {
 	}
 	changeMessage, err := n.dailyNotesService.ChangeSleepHours(ctx, userId, changeSleepHoursFromFront.Date, changeSleepHoursFromFront.SleepHours)
 	if err != nil {
-		// проверка ошибок из usecase
+		if errors.Is(err, usecase.ErrNoteNotExists) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "note not exists",
+			})
+			return
+		}
+		if errors.Is(err, usecase.ErrWrongSleepHourValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "wrong sleep hours value",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "status internal server",
+			"error": "internal server error",
 		})
 		return
 	}
@@ -158,7 +198,18 @@ func (n *NoteHandler) ChangeLoad(c *gin.Context) {
 	}
 	changeMessage, err := n.dailyNotesService.ChangeLoad(ctx, userId, changeLoadFromFront.Date, changeLoadFromFront.Load)
 	if err != nil {
-		// проверка ошибок из usecase
+		if errors.Is(err, usecase.ErrNoteNotExists) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "note not exists",
+			})
+			return
+		}
+		if errors.Is(err, usecase.ErrWrongLoadValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "wrong load value",
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "internal server error",
 		})

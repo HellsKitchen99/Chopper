@@ -22,6 +22,9 @@ func NewNoteHandler(dailyNotesService *usecase.DailyNotesService) *NoteHandler {
 
 func (n *NoteHandler) RegisterRoutes(protected gin.IRouter) {
 	protected.POST("/new", n.CreateNote)
+	protected.POST("/change/mood", n.ChangeMood)
+	protected.POST("/change/sleep_hours", n.ChangeSleepHours)
+	protected.POST("/change/load", n.ChangeLoad)
 }
 
 func (n *NoteHandler) CreateNote(c *gin.Context) {

@@ -25,11 +25,17 @@ func (d *DailyNotesService) CreateNote(ctx context.Context, userId uuid.UUID, da
 	now := time.Now()
 	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	mood := dailyNoteFromFront.Mood
+	if mood < 0 || mood > 10 {
+		return ErrWrongMoodValue
+	}
 	sleepHours := dailyNoteFromFront.SleepHours
 	if sleepHours > 9.9 || sleepHours < 0.0 {
 		return ErrWrongSleepHourValue
 	}
 	load := dailyNoteFromFront.Load
+	if load < 0 || load > 10 {
+		return ErrWrongLoadValue
+	}
 	if err := d.dailyNotesRepository.CreateNote(ctx, id, userId, date, mood, sleepHours, load); err != nil && errors.Is(err, repository.ErrUniqueViolation) {
 		return ErrNoteAlreadyExists
 	} else if err != nil {

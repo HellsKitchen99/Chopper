@@ -45,6 +45,9 @@ func (d *DailyNotesService) CreateNote(ctx context.Context, userId uuid.UUID, da
 }
 
 func (d *DailyNotesService) ChangeMood(ctx context.Context, userId uuid.UUID, date time.Time, mood int16) (string, error) {
+	if mood < 0 || mood > 10 {
+		return "", ErrWrongMoodValue
+	}
 	if err := d.dailyNotesRepository.ChangeMood(ctx, userId, date, mood); err != nil {
 		if errors.Is(err, repository.ErrDailyEntryNotFound) {
 			return "", ErrNoteNotExists
@@ -55,6 +58,9 @@ func (d *DailyNotesService) ChangeMood(ctx context.Context, userId uuid.UUID, da
 }
 
 func (d *DailyNotesService) ChangeSleepHours(ctx context.Context, userId uuid.UUID, date time.Time, sleepHours float64) (string, error) {
+	if sleepHours > 9.9 || sleepHours < 0.0 {
+		return "", ErrWrongSleepHourValue
+	}
 	if err := d.dailyNotesRepository.ChangeSleepHours(ctx, userId, date, sleepHours); err != nil {
 		if errors.Is(err, repository.ErrDailyEntryNotFound) {
 			return "", ErrNoteNotExists
@@ -65,6 +71,9 @@ func (d *DailyNotesService) ChangeSleepHours(ctx context.Context, userId uuid.UU
 }
 
 func (d *DailyNotesService) ChangeLoad(ctx context.Context, userId uuid.UUID, date time.Time, load int16) (string, error) {
+	if load < 0 || load > 10 {
+		return "", ErrWrongLoadValue
+	}
 	if err := d.dailyNotesRepository.ChangeLoad(ctx, userId, date, load); err != nil {
 		if errors.Is(err, repository.ErrDailyEntryNotFound) {
 			return "", ErrNoteNotExists

@@ -10,3 +10,4 @@ var ErrWrongPassword = errors.New("wrong password")
 // notes
 var ErrWrongSleepHourValue = errors.New("wrong sleep hours value")
 var ErrNoteAlreadyExists = errors.New("note already exusts")
+var ErrNoteNotExists = errors.New("note not exists")

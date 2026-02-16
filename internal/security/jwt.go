@@ -26,19 +26,18 @@ func NewJwt(secret []byte, expirationTime time.Duration, issuer, audience string
 }
 
 type UserClaims struct {
-	Id       uuid.UUID
-	Username string
-	Email    string
-	Role     domain.Role
+	UserClaims domain.UserClaims
 	jwtPackage.RegisteredClaims
 }
 
 func (j *Jwt) GenerateToken(id uuid.UUID, username, email string, role domain.Role) (string, error) {
 	claims := UserClaims{
-		Id:       id,
-		Username: username,
-		Email:    email,
-		Role:     role,
+		UserClaims: domain.UserClaims{
+			Id:       id,
+			Username: username,
+			Email:    email,
+			Role:     role,
+		},
 		RegisteredClaims: jwtPackage.RegisteredClaims{
 			Issuer:    j.issuer,
 			IssuedAt:  jwtPackage.NewNumericDate(time.Now()),
@@ -56,7 +55,7 @@ func (j *Jwt) GenerateToken(id uuid.UUID, username, email string, role domain.Ro
 	return signedToken, nil
 }
 
-func (j *Jwt) ValidateToken(signedToken string) (*UserClaims, error) {
+func (j *Jwt) ValidateToken(signedToken string) (*domain.UserClaims, error) {
 	claims := &UserClaims{}
 	token, err := jwtPackage.ParseWithClaims(signedToken, claims, func(signedToken *jwtPackage.Token) (any, error) {
 		if _, ok := signedToken.Method.(*jwtPackage.SigningMethodHMAC); !ok {
@@ -65,20 +64,20 @@ func (j *Jwt) ValidateToken(signedToken string) (*UserClaims, error) {
 		return j.secret, nil
 	})
 	if err != nil {
-		return claims, err
+		return nil, err
 	}
 
 	if !token.Valid {
-		return claims, fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 	if claims.Issuer != j.issuer {
-		return claims, fmt.Errorf("wrong issuer")
+		return nil, fmt.Errorf("wrong issuer")
 	}
 	if claims.ExpiresAt.Before(time.Now()) {
-		return claims, fmt.Errorf("token is expired")
+		return nil, fmt.Errorf("token is expired")
 	}
 	if token.Method.Alg() != jwtPackage.SigningMethodHS256.Alg() {
-		return claims, fmt.Errorf("wrong signing method")
+		return nil, fmt.Errorf("wrong signing method")
 	}
 	hasAudience := func(data jwtPackage.ClaimStrings, needAudience string) bool {
 		for _, s := range data {
@@ -89,7 +88,7 @@ func (j *Jwt) ValidateToken(signedToken string) (*UserClaims, error) {
 		return false
 	}
 	if hasAudience := hasAudience(claims.Audience, j.audience); !hasAudience {
-		return claims, fmt.Errorf("wrong audience")
+		return nil, fmt.Errorf("wrong audience")
 	}
-	return claims, nil
+	return &claims.UserClaims, nil
 }

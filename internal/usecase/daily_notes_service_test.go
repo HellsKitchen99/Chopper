@@ -3,6 +3,7 @@ package usecase
 import (
 	"chopper/internal/domain"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -167,7 +168,7 @@ func TestCreateNoteSuccess(t *testing.T) {
 	}
 }
 
-// Тест CreateNote - Провал (Невалидный Mood)
+// Тест CreateNote - Провал (Невалидный mood)
 func TestCreateNoteFailureInvalidMood(t *testing.T) {
 	// preparing
 	mockDailyNotesRepository := &MockDailyNotesRepository{
@@ -188,7 +189,7 @@ func TestCreateNoteFailureInvalidMood(t *testing.T) {
 		SleepHours: 5.5,
 		Load:       5,
 	}
-	dailyNoteFromFrontOverhighMood := domain.DailyNoteFromFront{
+	dailyNoteFromFrontOverMood := domain.DailyNoteFromFront{
 		Mood:       11,
 		SleepHours: 5.5,
 		Load:       5,
@@ -201,14 +202,14 @@ func TestCreateNoteFailureInvalidMood(t *testing.T) {
 		expectedError      error
 	}{
 		{name: "negative mood", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontNegativeMood, expectedError: ErrWrongMoodValue},
-		{name: "overhigh mood", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontOverhighMood, expectedError: ErrWrongMoodValue},
+		{name: "over mood", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontOverMood, expectedError: ErrWrongMoodValue},
 	}
 
 	// test + assert
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			err := dailyNotesService.CreateNote(test.ctx, test.userId, test.dailyNoteFromFront)
-			if err != test.expectedError {
+			if !errors.Is(err, test.expectedError) {
 				t.Errorf("expected error - %v", test.expectedError)
 			}
 			if !mockIdGenerator.isCalled {
@@ -219,4 +220,114 @@ func TestCreateNoteFailureInvalidMood(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Тест CreateNote - Провал (Невалидный sleepHours)
+func TestCreateNoteInvalidSleepHours(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		CreateNoteFn: func(ctx context.Context, id, userId uuid.UUID, date time.Time, mood int16, sleepHours float64, load int16) error {
+			return nil
+		},
+	}
+
+	mockIdGenerator := &MockUUIDGenerator{
+		NewIdFn: func() uuid.UUID {
+			return uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		},
+	}
+	ctx := context.Background()
+	userId := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	dailyNoteFromFrontNegativeSleepHours := domain.DailyNoteFromFront{
+		Mood:       5,
+		SleepHours: -1.1,
+		Load:       5,
+	}
+	dailyNoteFromFrontOverSleepHours := domain.DailyNoteFromFront{
+		Mood:       5,
+		SleepHours: 11.1,
+		Load:       5,
+	}
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, mockIdGenerator)
+	tests := []struct {
+		name               string
+		ctx                context.Context
+		userId             uuid.UUID
+		dailyNoteFromFront domain.DailyNoteFromFront
+		expectedError      error
+	}{
+		{name: "negative sleep hours", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontNegativeSleepHours, expectedError: ErrWrongSleepHourValue},
+		{name: "over sleep hours", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontOverSleepHours, expectedError: ErrWrongSleepHourValue},
+	}
+
+	// test ++ assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := dailyNotesService.CreateNote(test.ctx, test.userId, test.dailyNoteFromFront)
+			if !errors.Is(err, test.expectedError) {
+				t.Errorf("expected error - %v", test.expectedError)
+			}
+			if !mockIdGenerator.isCalled {
+				t.Errorf("генератор id не был вызван")
+			}
+			if mockDailyNotesRepository.createNoteFnIsCalled {
+				t.Error("create note был вызван")
+			}
+		})
+	}
+}
+
+// Тест CreateNote - Провал (Невалидный load)
+func TestCreateNoteInvalidLoad(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		CreateNoteFn: func(ctx context.Context, id, userId uuid.UUID, date time.Time, mood int16, sleepHours float64, load int16) error {
+			return nil
+		},
+	}
+	mockIdGenerator := &MockUUIDGenerator{
+		NewIdFn: func() uuid.UUID {
+			return uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		},
+	}
+	ctx := context.Background()
+	userId := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	dailyNoteFromFrontNegativeLoad := domain.DailyNoteFromFront{
+		Mood:       5,
+		SleepHours: 5.5,
+		Load:       -1,
+	}
+	dailyNoteFromFrontOverLoad := domain.DailyNoteFromFront{
+		Mood:       5,
+		SleepHours: 5.5,
+		Load:       11,
+	}
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, mockIdGenerator)
+	tests := []struct {
+		name               string
+		ctx                context.Context
+		userId             uuid.UUID
+		dailyNoteFromFront domain.DailyNoteFromFront
+		expectedError      error
+	}{
+		{name: "negative load", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontNegativeLoad, expectedError: ErrWrongLoadValue},
+		{name: "negative load", ctx: ctx, userId: userId, dailyNoteFromFront: dailyNoteFromFrontOverLoad, expectedError: ErrWrongLoadValue},
+	}
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := dailyNotesService.CreateNote(test.ctx, test.userId, test.dailyNoteFromFront)
+			if !errors.Is(err, test.expectedError) {
+				t.Errorf("expected error - %v", test.expectedError)
+			}
+			if !mockIdGenerator.isCalled {
+				t.Errorf("генератор id не был вызван")
+			}
+			if mockDailyNotesRepository.createNoteFnIsCalled {
+				t.Errorf("create note был вызван")
+			}
+		})
+	}
+
 }

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"chopper/internal/domain"
+	"chopper/internal/repository"
 	"context"
 	"errors"
 	"fmt"
@@ -336,4 +337,65 @@ func TestCreateNoteInvalidLoad(t *testing.T) {
 		})
 	}
 
+}
+
+// Тест CreateNote - Провал (ErrNoteAlreadyExists)
+func TestCreateNoteErrNoteAlreadyExists(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		CreateNoteFn: func(ctx context.Context, id, userId uuid.UUID, date time.Time, mood int16, sleepHours float64, load int16) error {
+			return repository.ErrUniqueViolation
+		},
+	}
+	mockIdGenerator := &MockUUIDGenerator{
+		NewIdFn: func() uuid.UUID {
+			return uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	dailyNoteFromFront := domain.DailyNoteFromFront{
+		Mood:       5,
+		SleepHours: 5.5,
+		Load:       5,
+	}
+	dailyNoteService := NewDailyNotesService(mockDailyNotesRepository, mockIdGenerator)
+	expectedUUID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	expectedDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
+	expectedMood, expectedSleepHours, expectedLoad := int16(5), 5.5, int16(5)
+	expectedError := ErrNoteAlreadyExists
+
+	// test
+	err := dailyNoteService.CreateNote(ctx, userId, dailyNoteFromFront)
+
+	// assert
+	if !errors.Is(err, expectedError) {
+		t.Errorf("expected error - %v", expectedError)
+	}
+	if !mockIdGenerator.isCalled {
+		t.Error("генератор id не был вызван")
+	}
+	if mockIdGenerator.uuid != expectedUUID {
+		t.Errorf("expected uuid - %v", expectedUUID)
+	}
+	if !mockDailyNotesRepository.createNoteFnIsCalled {
+		t.Errorf("create note не был вызван")
+	}
+	if mockDailyNotesRepository.createNoteId != expectedUUID {
+		t.Errorf("expected id - %v", expectedUUID)
+	}
+	if mockDailyNotesRepository.createNoteUserId != userId {
+		t.Errorf("expected user id - %v", userId)
+	}
+	if mockDailyNotesRepository.createNoteDate != expectedDate {
+		t.Errorf("expected date - %v", expectedDate)
+	}
+	if mockDailyNotesRepository.createNoteMood != expectedMood {
+		t.Errorf("expected mood - %v", expectedMood)
+	}
+	if mockDailyNotesRepository.createNoteSleepHours != expectedSleepHours {
+		t.Errorf("expected sleep hours - %v", expectedSleepHours)
+	}
+	if mockDailyNotesRepository.createNoteLoad != expectedLoad {
+		t.Errorf("expected load - %v", expectedLoad)
+	}
 }

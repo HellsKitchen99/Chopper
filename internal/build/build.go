@@ -60,7 +60,11 @@ func Run() error {
 	// создание слоев
 	userRepo := repository.NewUserRepositoryRealization(pool)
 	jwtService := security.NewJwt(jwtConfig.Secret, jwtConfig.ExpirationTime, jwtConfig.Issuer, jwtConfig.Audience)
-	userService := usecase.NewUserService(userRepo, jwtService)
+	// сделать конфиг с кост
+	cost := 10
+	passwordHasher := security.NewPasswordHasher(cost)
+	uuidGenerator := security.NewUUIDGenerator()
+	userService := usecase.NewUserService(userRepo, jwtService, passwordHasher, uuidGenerator)
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
 	dailyNotesRepo := repository.NewDailyNotesRepositoryRealization(pool)
 	dailyNotesService := usecase.NewDailyNotesService(dailyNotesRepo)

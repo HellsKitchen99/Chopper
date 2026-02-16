@@ -12,16 +12,18 @@ import (
 
 type DailyNotesService struct {
 	dailyNotesRepository DailyNotesRepository
+	uuidGenerator        UUIDGenerator
 }
 
-func NewDailyNotesService(dailyNotesRepository DailyNotesRepository) *DailyNotesService {
+func NewDailyNotesService(dailyNotesRepository DailyNotesRepository, uuidGenerator UUIDGenerator) *DailyNotesService {
 	return &DailyNotesService{
 		dailyNotesRepository: dailyNotesRepository,
+		uuidGenerator:        uuidGenerator,
 	}
 }
 
 func (d *DailyNotesService) CreateNote(ctx context.Context, userId uuid.UUID, dailyNoteFromFront domain.DailyNoteFromFront) error {
-	id := uuid.New()
+	id := d.uuidGenerator.NewId()
 	now := time.Now()
 	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	mood := dailyNoteFromFront.Mood

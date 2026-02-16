@@ -461,3 +461,49 @@ func TestCreateNoteErr(t *testing.T) {
 		t.Errorf("expected load - %v", expectedLoad)
 	}
 }
+
+// Тест ChangeMood - Успех
+func TestChangeMoodSuccess(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeMoodFn: func(ctx context.Context, userId uuid.UUID, date time.Time, mood int16) error {
+			return nil
+		},
+	}
+	ctx := context.Background()
+	userId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	mood := int16(5)
+	dailyNoteService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	expectedResponse := "mood успешно изменен"
+	/*
+		changeMoodFnIsCalled bool
+		changeMoodUserId     uuid.UUID
+		changeMoodDate       time.Time
+		changeMoodMood       int16
+	*/
+
+	// test
+	response, err := dailyNoteService.ChangeMood(ctx, userId, date, mood)
+
+	// assert
+	if err != nil {
+		t.Errorf("ошибки не ожидалось")
+	}
+	if response != expectedResponse {
+		t.Errorf("expected response - %v", expectedResponse)
+	}
+	if !mockDailyNotesRepository.changeMoodFnIsCalled {
+		t.Errorf("change mood не был вызван")
+	}
+	if mockDailyNotesRepository.changeMoodUserId != userId {
+		t.Errorf("expected userId - %v", userId)
+	}
+	if mockDailyNotesRepository.changeMoodDate != date {
+		t.Errorf("expected date - %v", date)
+	}
+	if mockDailyNotesRepository.changeMoodMood != mood {
+		t.Errorf("expected mood - %v", mood)
+	}
+}

@@ -67,7 +67,7 @@ func Run() error {
 	userService := usecase.NewUserService(userRepo, jwtService, passwordHasher, uuidGenerator)
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
 	dailyNotesRepo := repository.NewDailyNotesRepositoryRealization(pool)
-	dailyNotesService := usecase.NewDailyNotesService(dailyNotesRepo)
+	dailyNotesService := usecase.NewDailyNotesService(dailyNotesRepo, uuidGenerator)
 	alertRepository := repository.NewAlertRepositoryRealization(pool)
 	alertService := usecase.NewAlertServcie(alertRepository)
 	rateLimiter := middleware.NewRateLimiter(rate.Every(rateLimiterConfig.Rate), rateLimiterConfig.Burst)

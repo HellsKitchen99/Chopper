@@ -42,9 +42,9 @@ type MockDailyNotesRepository struct {
 	ChangeLoadFn func(ctx context.Context, userId uuid.UUID, date time.Time, load int16) error
 	// переданные аргументы
 	changeLoadFnIsCalled bool
-	changeLoadFnUserId   uuid.UUID
-	changeLoadFnDate     time.Time
-	changeLoadFnLoad     int16
+	changeLoadUserId     uuid.UUID
+	changeLoadDate       time.Time
+	changeLoadLoad       int16
 }
 
 func (m *MockDailyNotesRepository) CreateNote(ctx context.Context, id, userId uuid.UUID, date time.Time, mood int16, sleepHours float64, load int16) error {
@@ -67,7 +67,7 @@ func (m *MockDailyNotesRepository) ChangeMood(ctx context.Context, userId uuid.U
 	m.changeMoodDate = date
 	m.changeMoodMood = mood
 	if m.ChangeMoodFn != nil {
-		m.ChangeMoodFn(ctx, userId, date, mood)
+		return m.ChangeMoodFn(ctx, userId, date, mood)
 	}
 	return nil
 }
@@ -78,18 +78,18 @@ func (m *MockDailyNotesRepository) ChangeSleepHours(ctx context.Context, userId 
 	m.changeSleepHoursDate = date
 	m.changeSleepHoursSleepHours = sleepHours
 	if m.ChangeSleepHoursFn != nil {
-		m.ChangeSleepHoursFn(ctx, userId, date, sleepHours)
+		return m.ChangeSleepHoursFn(ctx, userId, date, sleepHours)
 	}
 	return nil
 }
 
 func (m *MockDailyNotesRepository) ChangeLoad(ctx context.Context, userId uuid.UUID, date time.Time, load int16) error {
 	m.changeLoadFnIsCalled = true
-	m.changeLoadFnUserId = userId
-	m.changeLoadFnDate = date
-	m.changeLoadFnLoad = load
+	m.changeLoadUserId = userId
+	m.changeLoadDate = date
+	m.changeLoadLoad = load
 	if m.ChangeLoadFn != nil {
-		m.ChangeLoadFn(ctx, userId, date, load)
+		return m.ChangeLoadFn(ctx, userId, date, load)
 	}
 	return nil
 }
@@ -550,5 +550,46 @@ func TestChangeMoodErrWrongMoodValue(t *testing.T) {
 				t.Errorf("change mood был вызван")
 			}
 		})
+	}
+}
+
+// Тест ChangeMood - Провал (ErrNoteNotExists)
+func TestChangeMoodErrNoteNotExists(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeMoodFn: func(ctx context.Context, userId uuid.UUID, date time.Time, mood int16) error {
+			return repository.ErrDailyEntryNotFound
+		},
+	}
+	ctx := context.Background()
+	userId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	mood := int16(5)
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	expectedError := ErrNoteNotExists
+
+	// test
+	result, err := dailyNotesService.ChangeMood(ctx, userId, date, mood)
+
+	// assert
+	if !errors.Is(err, expectedError) {
+		fmt.Println(err, expectedError)
+		t.Errorf("expected error - %v", expectedError)
+	}
+	if result != "" {
+		t.Errorf("result was expected empty")
+	}
+	if !mockDailyNotesRepository.changeMoodFnIsCalled {
+		t.Errorf("change mood was not called")
+	}
+	if mockDailyNotesRepository.changeMoodUserId != userId {
+		t.Errorf("expected userId - %v", userId)
+	}
+	if mockDailyNotesRepository.changeMoodDate != date {
+		t.Errorf("expected date - %v", date)
+	}
+	if mockDailyNotesRepository.changeMoodMood != mood {
+		t.Errorf("expected mood - %v", mood)
 	}
 }

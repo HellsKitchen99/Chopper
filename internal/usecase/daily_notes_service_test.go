@@ -97,12 +97,15 @@ func (m *MockDailyNotesRepository) ChangeLoad(ctx context.Context, userId uuid.U
 type MockUUIDGenerator struct {
 	NewIdFn  func() uuid.UUID
 	isCalled bool
+	uuid     uuid.UUID
 }
 
 func (m *MockUUIDGenerator) NewId() uuid.UUID {
 	m.isCalled = true
 	if m.NewIdFn != nil {
-		return m.NewIdFn()
+		uuid := m.NewIdFn()
+		m.uuid = uuid
+		return uuid
 	}
 	return uuid.UUID{}
 }
@@ -143,6 +146,9 @@ func TestCreateNoteSuccess(t *testing.T) {
 	}
 	if !mockIdGenerator.isCalled {
 		t.Errorf("генератор id не был вызван")
+	}
+	if mockIdGenerator.uuid != expectedId {
+		t.Errorf("expected id - %v", expectedId)
 	}
 	if !mockDailyNotesRepository.createNoteFnIsCalled {
 		t.Errorf("create note не был вызван")

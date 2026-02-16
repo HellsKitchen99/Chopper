@@ -3,24 +3,25 @@ package usecase
 import (
 	"chopper/internal/domain"
 	"chopper/internal/repository"
-	"chopper/internal/security"
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
 	userRepository UserRepository
-	jwtService     *security.Jwt
+	jwtService     JwtGenerator
+	passwordHasher PasswordHasher
+	uuidGenerator  UUIDGenerator
 }
 
-func NewUserService(userRepository UserRepository, jwtService *security.Jwt) *UserService {
+func NewUserService(userRepository UserRepository, jwtService JwtGenerator, passwordHasher PasswordHasher, uuidGenerator UUIDGenerator) *UserService {
 	return &UserService{
 		userRepository: userRepository,
 		jwtService:     jwtService,
+		passwordHasher: passwordHasher,
+		uuidGenerator:  uuidGenerator,
 	}
 }
 
@@ -28,11 +29,11 @@ func (u *UserService) CreateUser(ctx context.Context, userRegisterFromFront doma
 	defaultRole := domain.RoleUser
 	username := userRegisterFromFront.Username
 	email := userRegisterFromFront.Email
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(userRegisterFromFront.Password), bcrypt.DefaultCost)
+	passwordHash, err := u.passwordHasher.GenerateFromPassword(userRegisterFromFront.Password)
 	if err != nil {
-		return fmt.Errorf("error while trying to hash password: %v", err)
+		return err
 	}
-	uuid := uuid.New()
+	uuid := u.uuidGenerator.NewId()
 	if err := u.userRepository.CreateUser(ctx, uuid, username, email, string(passwordHash), defaultRole); err != nil && errors.Is(err, repository.ErrUniqueViolation) {
 		return ErrUserExists
 	} else if err != nil {
@@ -49,7 +50,7 @@ func (u *UserService) CheckUserInDatabase(ctx context.Context, userLoginFromFron
 	} else if err != nil {
 		return "", err
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.HashPassword), []byte(userLoginFromFront.Password)); err != nil {
+	if err := u.passwordHasher.CompareHashAndPassword(user.HashPassword, userLoginFromFront.Password); err != nil {
 		return "", ErrWrongPassword
 	}
 	token, err := u.jwtService.GenerateToken(user.Id, user.Username, user.Email, user.Role)

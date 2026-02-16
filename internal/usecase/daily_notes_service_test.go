@@ -507,3 +507,48 @@ func TestChangeMoodSuccess(t *testing.T) {
 		t.Errorf("expected mood - %v", mood)
 	}
 }
+
+// Тест ChangeMood - Провал (ErrWrongMoodValue)
+func TestChangeMoodErrWrongMoodValue(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeMoodFn: func(ctx context.Context, userId uuid.UUID, date time.Time, mood int16) error {
+			return nil
+		},
+	}
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	ctx := context.Background()
+	userId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	moodNegative := int16(-1)
+	moodOver := int16(11)
+	expectedError := ErrWrongMoodValue
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		userId        uuid.UUID
+		date          time.Time
+		mood          int16
+		expectedError error
+	}{
+		{name: "negative mood", ctx: ctx, userId: userId, date: date, mood: moodNegative, expectedError: expectedError},
+		{name: "over mood", ctx: ctx, userId: userId, date: date, mood: moodOver, expectedError: expectedError},
+	}
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := dailyNotesService.ChangeMood(test.ctx, test.userId, test.date, test.mood)
+			if !errors.Is(err, test.expectedError) {
+				t.Errorf("expected error - %v", expectedError)
+			}
+			if result != "" {
+				t.Errorf("ожидался пустой результат")
+			}
+			if mockDailyNotesRepository.changeMoodFnIsCalled {
+				t.Errorf("change mood был вызван")
+			}
+		})
+	}
+}

@@ -797,3 +797,42 @@ func TestChangeSleepHoursErr(t *testing.T) {
 		t.Errorf("sleep hours was expected - %v", sleepHours)
 	}
 }
+
+// Тест ChangeLoad - Успех
+func TestChangeLoadSuccess(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeLoadFn: func(ctx context.Context, userId uuid.UUID, date time.Time, load int16) error {
+			return nil
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	load := int16(5)
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	expectedResponse := "load успешно изменен"
+
+	// test
+	response, err := dailyNotesService.ChangeLoad(ctx, userId, date, load)
+
+	// assert
+	if err != nil {
+		t.Errorf("error was expected empty")
+	}
+	if response != expectedResponse {
+		t.Errorf("expected response - %v", expectedResponse)
+	}
+	if !mockDailyNotesRepository.changeLoadFnIsCalled {
+		t.Errorf("change load не был вызван")
+	}
+	if mockDailyNotesRepository.changeLoadUserId != userId {
+		t.Errorf("expected userId - %v", userId)
+	}
+	if mockDailyNotesRepository.changeLoadDate != date {
+		t.Errorf("expected date - %v", date)
+	}
+	if mockDailyNotesRepository.changeLoadLoad != load {
+		t.Errorf("expected load - %v", load)
+	}
+}

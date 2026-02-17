@@ -675,6 +675,50 @@ func TestChangeSleepHoursSuccess(t *testing.T) {
 	}
 }
 
+// Тест ChangeSleepHours - Провал (ErrWrongSleepHourValue)
+func TestChangeSleepHoursErrWrongSleepHourValue(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeSleepHoursFn: func(ctx context.Context, userId uuid.UUID, date time.Time, sleepHours float64) error {
+			return nil
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	sleepHoursNegative := -1.1
+	sleepHoursOver := 11.1
+	expectedError := ErrWrongSleepHourValue
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		userId        uuid.UUID
+		date          time.Time
+		sleepHours    float64
+		expectedError error
+	}{
+		{name: "negative sleep hours", ctx: ctx, userId: userId, date: date, sleepHours: sleepHoursNegative, expectedError: expectedError},
+		{name: "over sleep hours", ctx: ctx, userId: userId, date: date, sleepHours: sleepHoursOver, expectedError: expectedError},
+	}
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := dailyNotesService.ChangeSleepHours(test.ctx, test.userId, test.date, test.sleepHours)
+			if !errors.Is(err, test.expectedError) {
+				t.Errorf("expected error - %v", test.expectedError)
+			}
+			if result != "" {
+				t.Errorf("result was expected empty")
+			}
+			if mockDailyNotesRepository.changeSleepHoursFnIsCalled {
+				t.Errorf("change sleep hours был вызван")
+			}
+		})
+	}
+}
+
 // Тест ChangeSleepHours - Провал (Err)
 func TestChangeSleepHoursErr(t *testing.T) {
 	// preparing
@@ -714,15 +758,3 @@ func TestChangeSleepHoursErr(t *testing.T) {
 		t.Errorf("sleep hours was expected - %v", sleepHours)
 	}
 }
-
-/*func prepareChangeMoodTest() (context.Context, uuid.UUID, time.Time, int16) {
-	ctx := context.Background()
-	userId := uuid.MustParse("11111111-1111-1111-1111-111111111111")
-	now := time.Now()
-	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	mood := 5
-}
-
-func prepareChangeSleepHoursTest() (context.Context, uuid.UUID, time.Time, int16) {
-
-}*/

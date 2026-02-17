@@ -919,3 +919,43 @@ func TestChangeLoadErrNoteNotExists(t *testing.T) {
 		t.Errorf("expected load - %v", load)
 	}
 }
+
+// Тест ChangeLoad - Провал (Err)
+func TestChangeLoadErr(t *testing.T) {
+	// preparing
+	needError := errors.New("need error")
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeLoadFn: func(ctx context.Context, userId uuid.UUID, date time.Time, load int16) error {
+			return needError
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	load := int16(5)
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	expectedError := needError
+
+	// test
+	response, err := dailyNotesService.ChangeLoad(ctx, userId, date, load)
+
+	// assert
+	if !errors.Is(err, expectedError) {
+		t.Errorf("expected error - %v", expectedError)
+	}
+	if response != "" {
+		t.Errorf("response was expected empty")
+	}
+	if !mockDailyNotesRepository.changeLoadFnIsCalled {
+		t.Error("change load не был вызван")
+	}
+	if mockDailyNotesRepository.changeLoadUserId != userId {
+		t.Errorf("expected userId - %v", userId)
+	}
+	if mockDailyNotesRepository.changeLoadDate != date {
+		t.Errorf("expected date - %v", date)
+	}
+	if mockDailyNotesRepository.changeLoadLoad != load {
+		t.Errorf("expected load - %v", load)
+	}
+}

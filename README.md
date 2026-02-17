@@ -1,5 +1,7 @@
 # Chopper
 
+README is not up to date
+
 Backend сервис для отслеживания настроения и сна.
 
 

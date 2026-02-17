@@ -836,3 +836,47 @@ func TestChangeLoadSuccess(t *testing.T) {
 		t.Errorf("expected load - %v", load)
 	}
 }
+
+// Тест ChangeLoad - Провал (ErrWrongLoadValue)
+func TestChangeLoadErrWrongLoadValue(t *testing.T) {
+	//preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeLoadFn: func(ctx context.Context, userId uuid.UUID, date time.Time, load int16) error {
+			return nil
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	loadNegative := int16(-1)
+	loadOver := int16(11)
+	expectedError := ErrWrongLoadValue
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		userId        uuid.UUID
+		date          time.Time
+		load          int16
+		expectedError error
+	}{
+		{name: "negative load", ctx: ctx, userId: userId, date: date, load: loadNegative, expectedError: expectedError},
+		{name: "over load", ctx: ctx, userId: userId, date: date, load: loadOver, expectedError: expectedError},
+	}
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response, err := dailyNotesService.ChangeLoad(test.ctx, test.userId, test.date, test.load)
+			if !errors.Is(err, test.expectedError) {
+				t.Errorf("expected error - %v", expectedError)
+			}
+			if response != "" {
+				t.Errorf("response was expected empty")
+			}
+			if mockDailyNotesRepository.changeLoadFnIsCalled {
+				t.Errorf("change load был вызван")
+			}
+		})
+	}
+}

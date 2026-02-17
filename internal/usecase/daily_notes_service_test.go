@@ -719,6 +719,45 @@ func TestChangeSleepHoursErrWrongSleepHourValue(t *testing.T) {
 	}
 }
 
+// Тест ChangeSleepHours - Провал (ErrNoteNotExists)
+func TestChangeSleepHoursErrNoteNotExists(t *testing.T) {
+	// preparing
+	mockDailyNotesRepository := &MockDailyNotesRepository{
+		ChangeSleepHoursFn: func(ctx context.Context, userId uuid.UUID, date time.Time, sleepHours float64) error {
+			return repository.ErrDailyEntryNotFound
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	now := time.Now()
+	date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	sleepHours := 5.5
+	dailyNotesService := NewDailyNotesService(mockDailyNotesRepository, nil)
+	expectedError := ErrNoteNotExists
+
+	// test
+	response, err := dailyNotesService.ChangeSleepHours(ctx, userId, date, sleepHours)
+
+	// assert
+	if !errors.Is(err, expectedError) {
+		t.Errorf("expected error - %v", expectedError)
+	}
+	if response != "" {
+		t.Errorf("response was expected empty")
+	}
+	if !mockDailyNotesRepository.changeSleepHoursFnIsCalled {
+		t.Errorf("change sleep hours не был вызван")
+	}
+	if mockDailyNotesRepository.changeSleepHoursUserId != userId {
+		t.Errorf("expected userId - %v", userId)
+	}
+	if mockDailyNotesRepository.changeSleepHoursDate != date {
+		t.Errorf("expected date - %v", date)
+	}
+	if mockDailyNotesRepository.changeSleepHoursSleepHours != sleepHours {
+		t.Errorf("expected sleep hours - %v", sleepHours)
+	}
+}
+
 // Тест ChangeSleepHours - Провал (Err)
 func TestChangeSleepHoursErr(t *testing.T) {
 	// preparing

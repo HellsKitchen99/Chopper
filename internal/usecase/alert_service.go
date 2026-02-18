@@ -54,14 +54,14 @@ func isAlert(days []domain.Day) (string, bool) {
 		loadOne := zero.Load
 		loadTwo := one.Load
 		loadThree := two.Load
-		isLoadHigh := isLoadHigh(loadOne, loadTwo, loadThree)
+		highLoad := isLoadHigh(loadOne, loadTwo, loadThree)
 		if badMood && lowSleepHours {
 			return "За последние дни низкий уровень настроения и мало сна", true
 		}
-		if badMood && isLoadHigh {
+		if badMood && highLoad {
 			return "За последние дни низкий уровень настроения и большая загрузка", true
 		}
-		if lowSleepHours && isLoadHigh {
+		if lowSleepHours && highLoad {
 			return "За последние дни мало сна и большая загрузка", true
 		}
 	}

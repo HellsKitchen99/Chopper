@@ -4,7 +4,6 @@ import (
 	"chopper/internal/domain"
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -122,14 +121,12 @@ func TestGetLastSevenDaysSuccess(t *testing.T) {
 				t.Errorf("expected error was - %v", test.expectedError)
 			}
 			if response != test.expectedResponse {
-				fmt.Println(response, test.expectedResponse)
 				t.Errorf("expected response was - %v", test.expectedResponse)
 			}
 			if test.mockAlertRepository.getLastSevenDaysFnIsCalled != test.expectedIsCalled {
 				t.Errorf("get last seven days was not called")
 			}
 			if test.mockAlertRepository.userId != test.expectedUserId {
-				fmt.Println(test.mockAlertRepository.userId, test.expectedUserId)
 				t.Errorf("expected userId was - %v", test.expectedUserId)
 			}
 		})

@@ -167,6 +167,57 @@ func TestGetLastSevenDaysErr(t *testing.T) {
 	}
 }
 
+// Тест isSleepHoursLow
+func TestIsSleepHoursLow(t *testing.T) {
+	// preparing
+	tests := []struct {
+		name            string
+		sleepHoursOne   float64
+		sleepHoursTwo   float64
+		sleepHoursThree float64
+		expectedOk      bool
+	}{
+		{
+			name:            "all bad",
+			sleepHoursOne:   4.4,
+			sleepHoursTwo:   3.3,
+			sleepHoursThree: 2.2,
+			expectedOk:      true,
+		},
+		{
+			name:            "two bad",
+			sleepHoursOne:   8.0,
+			sleepHoursTwo:   5.5,
+			sleepHoursThree: 4.4,
+			expectedOk:      true,
+		},
+		{
+			name:            "one bad",
+			sleepHoursOne:   8.0,
+			sleepHoursTwo:   7.7,
+			sleepHoursThree: 5.5,
+			expectedOk:      false,
+		},
+		{
+			name:            "all good",
+			sleepHoursOne:   8.0,
+			sleepHoursTwo:   7.7,
+			sleepHoursThree: 7.6,
+			expectedOk:      false,
+		},
+	}
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ok := isSleepHoursLow(test.sleepHoursOne, test.sleepHoursTwo, test.sleepHoursThree)
+			if ok != test.expectedOk {
+				t.Errorf("expected ok was - %v", test.expectedOk)
+			}
+		})
+	}
+}
+
 // Тест isLoadHigh
 func TestIsLoadHigh(t *testing.T) {
 	// preparing

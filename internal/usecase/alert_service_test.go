@@ -167,6 +167,57 @@ func TestGetLastSevenDaysErr(t *testing.T) {
 	}
 }
 
+// Тест isMoodBad
+func TestIsMoodBad(t *testing.T) {
+	// preparing
+	tests := []struct {
+		name       string
+		moodOne    int16
+		moodTwo    int16
+		moodThree  int16
+		expectedOk bool
+	}{
+		{
+			name:       "all bad",
+			moodOne:    4,
+			moodTwo:    3,
+			moodThree:  2,
+			expectedOk: true,
+		},
+		{
+			name:       "two bad",
+			moodOne:    8,
+			moodTwo:    3,
+			moodThree:  2,
+			expectedOk: true,
+		},
+		{
+			name:       "one bad",
+			moodOne:    8,
+			moodTwo:    7,
+			moodThree:  2,
+			expectedOk: false,
+		},
+		{
+			name:       "all good",
+			moodOne:    8,
+			moodTwo:    7,
+			moodThree:  6,
+			expectedOk: false,
+		},
+	}
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ok := isMoodBad(test.moodOne, test.moodTwo, test.moodThree)
+			if ok != test.expectedOk {
+				t.Errorf("expected ok was - %v", test.expectedOk)
+			}
+		})
+	}
+}
+
 // Тест isSleepHoursLow
 func TestIsSleepHoursLow(t *testing.T) {
 	// preparing

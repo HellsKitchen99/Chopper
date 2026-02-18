@@ -3,7 +3,6 @@ package usecase
 import (
 	"chopper/internal/domain"
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,7 +23,6 @@ func (a *AlertService) GetLastSevenDays(ctx context.Context, userId uuid.UUID) (
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(notes)
 	alert, ok := isAlert(notes)
 	if ok {
 		return alert, nil

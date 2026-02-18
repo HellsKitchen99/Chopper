@@ -166,3 +166,54 @@ func TestGetLastSevenDaysErr(t *testing.T) {
 		t.Errorf("userId was expected - %v", userId)
 	}
 }
+
+// Тест isLoadHigh
+func TestIsLoadHigh(t *testing.T) {
+	// preparing
+	tests := []struct {
+		name       string
+		loadOne    int16
+		loadTwo    int16
+		loadThree  int16
+		expectedOk bool
+	}{
+		{
+			name:       "all bad",
+			loadOne:    8,
+			loadTwo:    7,
+			loadThree:  6,
+			expectedOk: true,
+		},
+		{
+			name:       "two bad",
+			loadOne:    5,
+			loadTwo:    4,
+			loadThree:  6,
+			expectedOk: true,
+		},
+		{
+			name:       "one bad",
+			loadOne:    5,
+			loadTwo:    4,
+			loadThree:  3,
+			expectedOk: false,
+		},
+		{
+			name:       "all good",
+			loadOne:    4,
+			loadTwo:    3,
+			loadThree:  2,
+			expectedOk: false,
+		},
+	}
+
+	// test + assert
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ok := isLoadHigh(test.loadOne, test.loadTwo, test.loadThree)
+			if ok != test.expectedOk {
+				t.Errorf("expected ok was - %v", test.expectedOk)
+			}
+		})
+	}
+}

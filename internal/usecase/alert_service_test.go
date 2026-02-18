@@ -135,3 +135,34 @@ func TestGetLastSevenDaysSuccess(t *testing.T) {
 		})
 	}
 }
+
+// Тест GetLastSevenDays - Провал (Err)
+func TestGetLastSevenDaysErr(t *testing.T) {
+	// preparing
+	needError := errors.New("need error")
+	mockAlertRepository := &MockAlertRepository{
+		GetLastSevenDaysFn: func(ctx context.Context, userId uuid.UUID) ([]domain.Day, error) {
+			return nil, needError
+		},
+	}
+	ctx, userId := context.Background(), uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	alertService := NewAlertServcie(mockAlertRepository)
+	expectedError := needError
+
+	// test
+	response, err := alertService.GetLastSevenDays(ctx, userId)
+
+	// assert
+	if !errors.Is(err, expectedError) {
+		t.Errorf("expected error was - %v", expectedError)
+	}
+	if response != "" {
+		t.Errorf("expected response was empty")
+	}
+	if !mockAlertRepository.getLastSevenDaysFnIsCalled {
+		t.Errorf("get last seven days was not called")
+	}
+	if mockAlertRepository.userId != userId {
+		t.Errorf("userId was expected - %v", userId)
+	}
+}
